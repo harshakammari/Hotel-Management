@@ -7,4 +7,6 @@ public interface IRoom {
     Double getRoomPrice();
     RoomType getRoomType();
     boolean isFree();
+    void bookRoom();
+    void vacateRoom();
 }

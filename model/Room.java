@@ -13,7 +13,7 @@ public class Room implements IRoom {
         this.roomNumber = roomNumber;
         this.price = price;
         this.roomType = roomType;
-        this.isFree = price == 0.0;  // Automatically mark room as free if price is 0.0
+        this.isFree = true;  // All rooms are available by default
     }
 
     @Override
@@ -36,10 +36,12 @@ public class Room implements IRoom {
         return isFree;
     }
 
+    @Override
     public void bookRoom() {
         this.isFree = false;
     }
 
+    @Override
     public void vacateRoom() {
         this.isFree = true;
     }

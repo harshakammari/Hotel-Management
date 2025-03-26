@@ -40,7 +40,18 @@ public class HotelResource {
             System.out.println("Customer not found with email: " + email);
             return null;
         }
-        return reservationService.reserveARoom(customer, room, checkInDate, checkOutDate);
+        
+        // First check if the room exists and is available for the given dates
+        if (room == null) {
+            System.out.println("Room not found.");
+            return null;
+        }
+        
+        Reservation reservation = reservationService.reserveARoom(customer, room, checkInDate, checkOutDate);
+        if (reservation == null) {
+            System.out.println("Room is not available for the selected dates.");
+        }
+        return reservation;
     }
 
     public Collection<Reservation> getCustomerReservations(String email) {
@@ -51,6 +62,8 @@ public class HotelResource {
     }
 
     public Collection<IRoom> findARoom(Date checkInDate, Date checkOutDate) {
+        // First update the status of all rooms
+        reservationService.updateRoomStatus();
         return reservationService.findRooms(checkInDate, checkOutDate);
     }
 
