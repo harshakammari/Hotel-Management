@@ -64,8 +64,7 @@ HotelManagementApplication/
 
 ## Author
 
-[Your Name]
-
+_**Harsha Kammari**_
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details. 
