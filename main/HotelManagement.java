@@ -9,7 +9,7 @@ import java.util.Collection;
 import java.util.NoSuchElementException;
 import java.sql.Date;
 import java.util.regex.Pattern;
-
+import Service.ReservationService;
 public class HotelManagement {
     private static final Scanner scanner = new Scanner(System.in);
     private static final HotelResource hotelResource = HotelResource.getInstance();
@@ -114,6 +114,7 @@ public class HotelManagement {
 
     private static void findAndReserveRoom() {
         try {
+            // Step 1: Get and validate user email
             System.out.print("Enter your email: ");
             String email = scanner.nextLine();
 
@@ -128,45 +129,125 @@ public class HotelManagement {
                 return;
             }
 
-            System.out.print("Enter room number to reserve: ");
-            String roomNumber = scanner.nextLine();
-            if (roomNumber == null || roomNumber.trim().isEmpty()) {
-                System.out.println("Room number cannot be empty.");
-                return;
-            }
-
-            IRoom room = hotelResource.getRoom(roomNumber);
-            if (room == null) {
-                System.out.println("Room not found.");
-                return;
-            }
-            if (!room.isFree()) {
-                System.out.println("Room is not available.");
-                return;
-            }
-
+            // Step 2: Get and validate check-in and check-out dates
+            Date checkInDate, checkOutDate;
             try {
                 System.out.print("Enter Check-in date (yyyy-mm-dd): ");
-                Date checkInDate = Date.valueOf(scanner.nextLine());
+                checkInDate = Date.valueOf(scanner.nextLine());
                 System.out.print("Enter Check-out date (yyyy-mm-dd): ");
-                Date checkOutDate = Date.valueOf(scanner.nextLine());
+                checkOutDate = Date.valueOf(scanner.nextLine());
 
                 if (!areDatesValid(checkInDate, checkOutDate)) {
                     System.out.println("Invalid dates. Check-out must be after check-in and dates must be in the future.");
                     return;
                 }
-
-                Reservation reservation = hotelResource.bookARoom(email, room, checkInDate, checkOutDate);
-                if (reservation != null) {
-                    System.out.println("Reservation Successful: " + reservation);
-                } else {
-                    System.out.println("Failed to create reservation.");
-                }
             } catch (IllegalArgumentException e) {
                 System.out.println("Invalid date format. Please use yyyy-mm-dd format.");
+                return;
+            }
+
+            // Step 3: Search for available rooms using original dates
+            System.out.println("\nSearching for available rooms for " + checkInDate + " to " + checkOutDate + "...");
+            Collection<IRoom> availableRooms = hotelResource.findARoom(checkInDate, checkOutDate);
+            
+            // Step 4: If rooms found for original dates, let user select a room
+            if (!availableRooms.isEmpty()) {
+                System.out.println("Rooms available for your requested dates!");
+                bookAvailableRoom(email, availableRooms, checkInDate, checkOutDate);
+            } else {
+                // Step 5: If no rooms found for original dates, check for rooms with dates 7 days later
+                System.out.println("Sorry, no rooms available for the selected dates.");
+                System.out.println("Checking for alternative dates (7 days later)...");
+                
+                // Calculate new dates (7 days later)
+                int daysOut = 7;
+                java.util.Calendar calendar = java.util.Calendar.getInstance();
+                
+                // Calculate new check-in date (7 days later)
+                calendar.setTime(checkInDate);
+                calendar.add(java.util.Calendar.DAY_OF_MONTH, daysOut);
+                Date newCheckInDate = new Date(calendar.getTimeInMillis());
+                
+                // Calculate new check-out date (7 days later)
+                calendar.setTime(checkOutDate);
+                calendar.add(java.util.Calendar.DAY_OF_MONTH, daysOut);
+                Date newCheckOutDate = new Date(calendar.getTimeInMillis());
+                
+                // Search for rooms with new dates
+                System.out.println("Checking availability for: " + newCheckInDate + " to " + newCheckOutDate);
+                Collection<IRoom> alternativeRooms = hotelResource.findARoom(newCheckInDate, newCheckOutDate);
+                
+                if (!alternativeRooms.isEmpty()) {
+                    // Rooms found for alternative dates
+                    System.out.println("\nGood news! We found rooms available for alternative dates: " + 
+                                      newCheckInDate + " to " + newCheckOutDate);
+                    
+                    // Display available rooms for new dates
+                    System.out.println("\nAvailable Rooms for " + newCheckInDate + " to " + newCheckOutDate + ":");
+                    int index = 1;
+                    for (IRoom room : alternativeRooms) {
+                        System.out.println(index + ". " + room);
+                        index++;
+                    }
+                    
+                    // Ask if user wants to book with new dates
+                    System.out.print("\nWould you like to book a room for these alternative dates? (y/n): ");
+                    String choice = scanner.nextLine().trim().toLowerCase();
+                    
+                    if (choice.equals("y")) {
+                        // User accepted alternative dates
+                        bookAvailableRoom(email, alternativeRooms, newCheckInDate, newCheckOutDate);
+                    } else {
+                        // User declined alternative dates
+                        System.out.println("Reservation process cancelled. Thank you for considering our hotel.");
+                    }
+                } else {
+                    // No rooms available even with alternative dates
+                    System.out.println("\nWe apologize, but there are no rooms available for either your original dates");
+                    System.out.println("or for the alternative dates (" + newCheckInDate + " to " + newCheckOutDate + ").");
+                    System.out.println("Please try different dates or check back later for availability.");
+                }
             }
         } catch (Exception e) {
             System.out.println("Error during room reservation: " + e.getMessage());
+            e.printStackTrace(); // For debugging purposes
+        }
+    }
+    
+    private static void bookAvailableRoom(String email, Collection<IRoom> availableRooms, Date checkInDate, Date checkOutDate) {
+        // Display available rooms
+        System.out.println("\nAvailable Rooms:");
+        int index = 1;
+        for (IRoom room : availableRooms) {
+            System.out.println(index + ". " + room);
+            index++;
+        }
+        
+        // Let user select a room
+        System.out.print("\nEnter the room number you wish to book: ");
+        String roomNumber = scanner.nextLine().trim();
+        
+        // Validate room selection
+        IRoom selectedRoom = null;
+        for (IRoom room : availableRooms) {
+            if (room.getRoomNumber().equals(roomNumber)) {
+                selectedRoom = room;
+                break;
+            }
+        }
+        
+        if (selectedRoom == null) {
+            System.out.println("Invalid room number. Please try again.");
+            return;
+        }
+        
+        // Book the room
+        Reservation reservation = hotelResource.bookARoom(email, selectedRoom, checkInDate, checkOutDate);
+        if (reservation != null) {
+            System.out.println("\nReservation Successful!");
+            System.out.println(reservation);
+        } else {
+            System.out.println("Failed to create reservation. The room may no longer be available.");
         }
     }
 

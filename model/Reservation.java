@@ -2,7 +2,6 @@ package model;
 
 import java.util.Date;
 import IRoominterface.IRoom;
-
 public class Reservation {
     private final Customer customer;
     private final IRoom room;

@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Calendar;
 import java.util.Date;
 
+import model.Room;
+
 import IRoominterface.IRoom;
 import model.Customer;
 import model.Reservation;
@@ -19,6 +21,9 @@ public class ReservationService {
     private ReservationService() {
         rooms = new ArrayList<>();
         reservations = new ArrayList<>();
+        
+        // Update room status based on current reservations
+        updateRoomStatus();
     }
 
     public Collection<IRoom> getAllRooms() {
@@ -63,7 +68,8 @@ public class ReservationService {
             reservations.removeIf(reservation -> reservation.getRoom().getRoomNumber().equals(roomNumber));
             
             // Then remove the room itself
-            return rooms.remove(roomToRemove);
+            boolean result = rooms.remove(roomToRemove);
+            return result;
         }
         return false;
     }

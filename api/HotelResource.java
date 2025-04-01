@@ -15,7 +15,8 @@ public class HotelResource {
     private final ReservationService reservationService = ReservationService.getInstance();
     private final Map<String, Customer> customers = new HashMap<>();
 
-    private HotelResource() {}
+    private HotelResource() {
+    }
 
     public static HotelResource getInstance() {
         return instance;
@@ -28,6 +29,8 @@ public class HotelResource {
     public void createACustomer(String firstName, String lastName, String email, String phone) {
         Customer customer = new Customer(firstName, lastName, email, phone);
         customers.put(email, customer);
+        // Also add customer to CustomerService to ensure it shows up in the admin menu
+        Service.CustomerService.getInstance().addCustomer(firstName, lastName, email, phone);
     }
 
     public IRoom getRoom(String roomNumber) {

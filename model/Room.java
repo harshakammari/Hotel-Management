@@ -2,7 +2,6 @@ package model;
 
 import IRoominterface.IRoom; 
 import RoomTypeenum.RoomType;
-
 public class Room implements IRoom {
     private final String roomNumber;
     private final double price;
